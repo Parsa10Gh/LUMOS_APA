@@ -160,7 +160,3 @@ The `Multiplier` module is a simple combinational logic module that multiplies t
 The `MultiplierController` module provides an efficient way to multiply two 32-bit operands by breaking them into smaller segments and combining partial results. This approach is useful for designs where a smaller multiplier unit is available or where resource optimization is needed.
 
 ## Result and Waveforms
-![Waveform1](https://raw.githubusercontent.com/Parsa10Gh/LUMOS_APA/main/Images/Waveform1.png)
-![Waveform2](https://raw.githubusercontent.com/Parsa10Gh/LUMOS_APA/main/Images/Waveform2.png)
-![Waveform3](https://raw.githubusercontent.com/Parsa10Gh/LUMOS_APA/main/Images/Waveform3.png)
-![Waveform4](https://raw.githubusercontent.com/Parsa10Gh/LUMOS_APA/main/Images/Waveform4.png)
