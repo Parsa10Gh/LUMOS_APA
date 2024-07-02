@@ -1,6 +1,6 @@
 
 # Computer Organization Project Spring_2024
-==============================================================
+
 # Iran Univeristy of Science and Technology
 
 - Team Members: Parsa Ghorbani & AmirMohammad Chamanzari & AmirReza Bakhtaki
@@ -55,110 +55,65 @@ loop:
 This program iterates through a set of floating-point numbers stored in memory, computes their Euclidean norm, and accumulates the results in `f0`.
 
 ---
-## Square Root Calculation Module
 
-This Verilog module implements a fixed-point square root calculation using a state machine. The design employs an iterative approach to compute the square root of a given operand. Below is a detailed description of the code:
+#  Multiplier and Square Root Circuit
 
-#### Registers and Signals
-- **current_operand**: Holds the current value of the operand being processed.
-- **approx_root**: Holds the approximate value of the square root being computed.
-- **intermediate_result**: Temporary register to store intermediate results during computation.
-- **accumulated_root**: Stores the accumulated value of the square root.
-- **iteration_count**: Counter to keep track of the number of iterations required for the calculation.
-- **operand_copy**: A copy of the input operand used for shifting and extracting bits.
-- **next_bits**: Holds the next two most significant bits (MSB) to be processed in each iteration.
+This Verilog module implements both an enhanced multiplier circuit and a square root circuit designed for a floating point unit (FPU). It performs 32-bit floating point multiplication and square root operations using a pipelined approach.
 
-#### State Machine States
-- **IDLE_STATE**: Initial state where the module waits for the square root operation command.
-- **CALC_STATE**: Active state where the module performs the square root calculation.
+## Module Overview
 
-#### Description of Operation
+### Inputs
+- **clk**: Clock signal
+- **operand_1**: First operand (32-bit)
+- **operand_2**: Second operand (32-bit)
+- **operation**: Control signal to determine the operation (e.g., multiplication or square root)
 
-1. **Reset Condition**
-    - When the `reset` signal is high, the state machine is reset to the `IDLE_STATE`. The `root` and `root_ready` signals are also reset, and the input operand is copied to `operand_copy`.
+### Outputs
+- **product**: Output product from the multiplication circuit (64-bit)
+- **product_ready**: Flag to indicate the completion of the multiplication
+- **root**: Output result from the square root circuit (32-bit)
+- **root_ready**: Flag to indicate the completion of the square root computation
 
-2. **IDLE_STATE**
-    - In this state, the module checks if the `operation` signal indicates a square root operation (`FPU_SQRT`). If so, it initializes the values for computation:
-        - `current_operand` is initialized with the two MSBs of `operand_1`.
-        - `approx_root` is set to `2'b01`.
-        - `iteration_count` is set to half of the total width of the operand plus the fractional bits (`(WIDTH + FBITS) >> 1`).
-        - The state machine transitions to the `CALC_STATE`.
-        - `accumulated_root` is reset to 0.
+## Multiplier Circuit
 
-3. **CALC_STATE**
-    - In this state, the module performs the square root calculation iteratively:
-        - **Iteration Loop**:
-            - **Subtraction Check**: `intermediate_result` is calculated by subtracting `approx_root` from `current_operand`.
-            - **Shift and Accumulate**:
-                - If `intermediate_result` is negative, `accumulated_root` is shifted left by 1 bit.
-                - If `intermediate_result` is non-negative, `accumulated_root` is shifted left and incremented by 1.
-            - **Operand Update**:
-                - `operand_copy` is shifted left by 2 bits.
-                - The next two MSBs are extracted and stored in `next_bits`.
-                - `current_operand` is updated by shifting left by 2 bits and adding `next_bits`.
-                - `approx_root` is updated by shifting `accumulated_root` left by 2 bits and adding 1.
-            - **Iteration Count**:
-                - The iteration count is decremented by 1.
-                - The loop continues until the iteration count reaches 0.
-        - **Final Result**:
-            - Once the iterations are complete, the final square root value is stored in `root`.
-            - The `root_ready` signal is set to 1, indicating that the result is ready.
-            - The state machine transitions back to the `IDLE_STATE`.
+The multiplier circuit performs 32-bit multiplication using partial products. It breaks down the multiplication into four stages, each producing a partial product. The final product is computed by combining these partial products.
 
-#### Conclusion
+### Stages of Multiplication
+1. **Stage 1**: Multiply the lower 16 bits of both operands.
+2. **Stage 2**: Multiply the upper 16 bits of `operand_1` and the lower 16 bits of `operand_2`.
+3. **Stage 3**: Multiply the lower 16 bits of `operand_1` and the upper 16 bits of `operand_2`.
+4. **Stage 4**: Multiply the upper 16 bits of both operands.
+5. **Stage 5**: Combine all partial products to form the final 64-bit product.
 
-This module efficiently computes the square root of a fixed-point number using an iterative method and a state machine. It is designed to handle reset conditions and ensures that the result is accurate and ready for use once the calculation is complete.
+### Key Registers and Signals
+- **mul_input_1, mul_input_2**: 16-bit registers to hold the partial inputs for the multiplier.
+- **mul_output**: 32-bit wire to hold the result of the partial multiplication.
+- **part_prod1, part_prod2, part_prod3, part_prod4**: 32-bit registers to hold the partial products.
+- **mul_stage, next_mul_stage**: 3-bit registers to keep track of the current and next stages of multiplication.
 
-Certainly! Here's a description for the Verilog modules provided, suitable for inclusion in a readme file:
+## Square Root Circuit
 
----
+The square root circuit computes the square root of a 32-bit operand using an iterative approach. The algorithm is based on the non-restoring division method.
 
-## Multiplier Circuit 
-This Verilog module implements a multiplier controller that multiplies two 32-bit operands by breaking them down into smaller 16-bit segments and using a smaller multiplier module. The module handles the multiplication in stages, storing partial products and combining them to produce the final 64-bit product.
+### Stages of Square Root Computation
+1. **Stage 1**: Initialize the square root computation.
+2. **Stage 2**: Start the square root computation.
+3. **Stage 3**: Continue the square root computation until completion.
 
-#### Inputs
-- `clk`: Clock signal for synchronous operations.
-- `reset`: Reset signal to initialize all registers.
-- `operand_1`: The first 32-bit operand.
-- `operand_2`: The second 32-bit operand.
-- `operation`: Control signal indicating a multiplication operation.
+### Key Registers and Signals
+- **sqrt_stage, next_sqrt_stage**: 2-bit registers to keep track of the current and next stages of the square root computation.
+- **sqrt_init**: Flag to indicate the initialization of the square root computation.
+- **sqrt_active**: Flag to indicate if the square root computation is active.
+- **dividend, dividend_next**: Registers to hold the current and next values of the dividend.
+- **quotient, quotient_next**: Registers to hold the current and next values of the quotient.
+- **accumulator, accumulator_next**: Registers to hold the current and next values of the accumulator.
+- **test_result**: Register to hold the test result during the computation.
+- **iteration**: Counter to track the number of iterations.
 
-#### Outputs
-- `product`: The 64-bit result of the multiplication.
-- `product_ready`: Signal indicating that the product is ready.
+This module provides a robust and efficient solution for performing 32-bit multiplication and square root operations in hardware, making it suitable for integration into larger floating point units and other digital signal processing systems.
 
-#### Internal Registers and Wires
-- `product`: Register to hold the final 64-bit product.
-- `product_ready`: Register to indicate when the product is ready.
-- `caseNum`: Register to keep track of the current state in the state machine.
-- `A`, `B`: Registers to hold 16-bit segments of the operands for multiplication.
-- `multiplyResult`: Wire to hold the result of the 16-bit multiplication.
-- `partialPordact1`, `partialPordact2`, `partialPordact3`, `partialPordact4`: Registers to hold intermediate partial products.
 
-#### State Machine
-The state machine controls the steps of the multiplication:
-1. **State 0**: Multiply lower 16 bits of both operands.
-2. **State 1**: Store partial result and prepare for the next multiplication (upper 16 bits of `operand_1` and lower 16 bits of `operand_2`).
-3. **State 2**: Shift and store partial result, prepare for the next multiplication (lower 16 bits of `operand_1` and upper 16 bits of `operand_2`).
-4. **State 3**: Shift and store partial result, prepare for the next multiplication (upper 16 bits of both operands).
-5. **State 4**: Shift and store the final partial result.
-6. **State 5**: Combine all partial products to form the final 64-bit product and set `product_ready` flag.
-
-### Multiplier
-
-The `Multiplier` module is a simple combinational logic module that multiplies two 16-bit numbers.
-
-#### Inputs
-- `operand_1`: The first 16-bit operand.
-- `operand_2`: The second 16-bit operand.
-
-#### Output
-- `product`: The 32-bit result of the multiplication.
-
-### Conclusion
-
-The `MultiplierController` module provides an efficient way to multiply two 32-bit operands by breaking them into smaller segments and combining partial results. This approach is useful for designs where a smaller multiplier unit is available or where resource optimization is needed.
-
+This module provides a robust and efficient solution for performin
 ## Result and Waveforms
 ![Waveform1](https://raw.githubusercontent.com/Parsa10Gh/LUMOS_APA/main/Images/Waveform1.png)
 ![Waveform2](https://raw.githubusercontent.com/Parsa10Gh/LUMOS_APA/main/Images/Waveform2.png)
