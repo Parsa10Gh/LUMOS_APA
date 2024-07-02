@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v3.3.100 (w)1999-2019 BSI
-[*] Wed Jun 05 21:32:40 2024
+[*] Mon Jul 01 16:01:40 2024
 [*]
-[dumpfile] "D:\GitHub\IUST-Computer-Organization\LUMOS\LUMOS.vcd"
-[dumpfile_mtime] "Wed Jun 05 21:31:51 2024"
-[dumpfile_size] 965539
-[savefile] "D:\GitHub\IUST-Computer-Organization\LUMOS\LUMOS.gtkw"
-[timestart] 23288
-[size] 1920 1009
+[dumpfile] "C:\ORGproject\LUMOS_APA\LUMOS.vcd"
+[dumpfile_mtime] "Mon Jul 01 15:59:19 2024"
+[dumpfile_size] 31890
+[savefile] "C:\ORGproject\LUMOS_APA\LUMOS.gtkw"
+[timestart] 0
+[size] 1711 1009
 [pos] -1 -1
-*-6.945527 23807 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+*-7.603739 23807 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] LUMOS_Testbench.
 [treeopen] LUMOS_Testbench.uut.
 [sst_width] 197

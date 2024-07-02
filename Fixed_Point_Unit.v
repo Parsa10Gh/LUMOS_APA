@@ -40,36 +40,143 @@ module Fixed_Point_Unit
     reg [WIDTH - 1 : 0] root;
     reg root_ready;
 
-        /*
-         *  Describe Your Square Root Calculator Circuit Here.
-         */
+ // Registers for square root calculation
+reg [WIDTH-1:0] current_operand;
+reg [WIDTH-1:0] approx_root;
+reg [WIDTH-1:0] intermediate_result;
+reg [WIDTH-1:0] accumulated_root;
+reg [WIDTH-1:0] iteration_count;
+reg [WIDTH-1:0] operand_copy;
 
+// State machine states
+localparam IDLE_STATE = 2'b00;
+localparam CALC_STATE = 2'b01;
+reg [1:0] current_state;
+reg [1:0] next_bits;
+
+always @(posedge clk) begin
+    if (reset) begin
+        current_state <= IDLE_STATE;
+        root <= 0;
+        root_ready <= 0;
+        operand_copy <= operand_1;
+    end else begin
+        case (current_state)
+            IDLE_STATE: begin
+                if (operation == `FPU_SQRT) begin
+                    // Setup initial values for computation
+                    current_operand <= operand_1[WIDTH-1:WIDTH-2];
+                    approx_root <= 2'b01;
+                    iteration_count <= (WIDTH + FBITS) >> 1; // Determine number of iterations
+                    current_state <= CALC_STATE;
+                    accumulated_root <= 0;
+                end
+            end
+            CALC_STATE: begin
+                if (iteration_count > 0) begin
+                    // Calculate the next digit of the square root
+                    intermediate_result <= current_operand - approx_root;
+                    if (intermediate_result < 0) begin
+                        // If result is negative, shift left by 1
+                        accumulated_root <= accumulated_root << 1;
+                    end else begin
+                        // If result is positive, shift left and add 1
+                        accumulated_root <= (accumulated_root << 1) + 1;
+                    end
+
+                    // Prepare for next iteration by shifting operand
+                    operand_copy <= operand_copy << 2;
+                    // Extract the next two bits for the next iteration
+                    next_bits <= operand_copy[WIDTH-1:WIDTH-2];
+                    // Update the current operand
+                    current_operand <= (current_operand << 2) + next_bits;
+                    // Update the approximation of the root
+                    approx_root <= (accumulated_root << 2) + 1;
+                    
+                    iteration_count <= iteration_count - 1;
+                end else begin
+                    root <= accumulated_root;
+                    root_ready <= 1;
+                    current_state <= IDLE_STATE;
+                end
+            end
+        endcase
+    end
+end
     // ------------------ //
     // Multiplier Circuit //
-    // ------------------ //   
+    // ------------------ // 
+    // Internal registers to hold intermediate states and partial products  
     reg [64 - 1 : 0] product;
     reg product_ready;
+    reg [2:0] caseNum;
+    reg [15 : 0] A, B;
+    wire [31 : 0] multiplyResult;
+    reg [31 : 0] partialPordact1, partialPordact2, partialPordact3, partialPordact4;
 
-    reg     [15 : 0] multiplierCircuitInput1;
-    reg     [15 : 0] multiplierCircuitInput2;
-    wire    [31 : 0] multiplierCircuitResult;
-
-    Multiplier multiplier_circuit
-    (
-        .operand_1(multiplierCircuitInput1),
-        .operand_2(multiplierCircuitInput2),
-        .product(multiplierCircuitResult)
+    // Multiplier instance to multiply 16-bit segments
+    Multiplier multiplier(
+        .operand_1(A),
+        .operand_2(B),
+        .product(multiplyResult)
     );
 
-    reg     [31 : 0] partialProduct1;
-    reg     [31 : 0] partialProduct2;
-    reg     [31 : 0] partialProduct3;
-    reg     [31 : 0] partialProduct4;
-
-        /*
-         *  Describe Your 32-bit Multiplier Circuit Here.
-         */
-         
+    // Sequential logic to handle reset and multiplication state machine
+    always @(posedge clk or posedge reset)
+    begin
+        if (reset) begin
+            // Reset all registers to their initial values
+            caseNum <= 0;
+            product_ready <= 0;
+            product <= 0;
+            {partialPordact1, partialPordact2, partialPordact3, partialPordact4} <= 0;
+            {A, B} <= 0;
+        end
+        else if (operation == `FPU_MUL) begin
+            case (caseNum)
+                0: begin 
+                    // Stage 1: Multiply lower 16 bits of both operands
+                    A <= operand_1[15:0];
+                    B <= operand_2[15:0];
+                    caseNum <= 1;
+                end
+                1: begin 
+                    // Store partial result and prepare next multiplication (upper 16 bits of operand_1 and lower 16 bits of operand_2)
+                    partialPordact1 <= multiplyResult;
+                    A <= operand_1[31:16];
+                    B <= operand_2[15:0];
+                    caseNum <= 2;
+                end
+                2: begin 
+                    // Shift and store partial result, prepare next multiplication (lower 16 bits of operand_1 and upper 16 bits of operand_2)
+                    partialPordact2 <= multiplyResult << 16;
+                    A <= operand_1[15:0];
+                    B <= operand_2[31:16];
+                    caseNum <= 3;
+                end
+                3: begin 
+                    // Shift and store partial result, prepare next multiplication (upper 16 bits of both operands)
+                    partialPordact3 <= multiplyResult << 16;
+                    A <= operand_1[31:16];
+                    B <= operand_2[31:16];
+                    caseNum <= 4;
+                end
+                4: begin
+                    // Shift and store the final partial result
+                    partialPordact4 <= multiplyResult << 32;
+                    caseNum <= 5;
+                end
+                5: begin
+                    // Combine all partial products to form the final 64-bit product
+                    product <= partialPordact1 + partialPordact2 + partialPordact3 + partialPordact4;
+                    product_ready <= 1;
+                    caseNum <= 0;
+                end
+                // Default case to handle unexpected states
+                default: caseNum <= 0;
+            endcase
+        end
+    end
 endmodule
 
 module Multiplier
